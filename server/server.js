@@ -86,6 +86,21 @@ app.prepare().then(async () => {
     }
   );
 
+  router.get("/orders", verifyRequest(), async (ctx) => {
+    console.log("orders!");
+
+    // Load the current session to get the `accessToken`.
+    const session = ctx.session;
+    // Create a new client for the specified shop.
+    const client = new Shopify.Clients.Rest(session.shop, session.accessToken);
+    // Use `client.get` to request the specified Shopify REST API endpoint, in this case `products`.
+    const products = await client.get({
+      path: "products",
+    });
+
+    console.log(products.body);
+  });
+
   router.get("(/_next/static/.*)", handleRequest); // Static content is clear
   router.get("/_next/webpack-hmr", handleRequest); // Webpack content is clear
   router.get("(.*)", async (ctx) => {
