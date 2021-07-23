@@ -1,27 +1,47 @@
-import React from "react";
-import { Page, Card, Layout } from "@shopify/polaris";
+import { useState, useCallback } from "react";
+import { Page, Card, Layout, Tabs, DisplayText } from "@shopify/polaris";
+import OrderCard from "./components/OrderCard";
+import Orders from "./components/Orders";
+import ProductCard from "./components/ProductCard";
+import Products from "./components/Products";
 
-export default class Index extends React.Component {
-  render() {
-    return (
-      <Page
-        breadcrumbs={[{ content: "Products", url: "/products" }]}
-        title="Hello World"
-        primaryAction={{ content: "Add Products" }}
-      >
-        <Layout>
-          <Layout.Section>
-            <Card title="Test" oneHalf>
-              <p>Hello there</p>
-            </Card>
-          </Layout.Section>
-          <Layout.Section oneHalf>
-            <Card title="testss">
-              <p>Hello there</p>
-            </Card>
-          </Layout.Section>
-        </Layout>
-      </Page>
-    );
-  }
-}
+const Index = () => {
+  const [selected, setSelected] = useState(0);
+
+  const handleTabChange = useCallback(
+    (selectedTabIndex) => setSelected(selectedTabIndex),
+    []
+  );
+
+  const views = [<Orders />, <Products />];
+
+  const tabs = [
+    {
+      id: "orders",
+      content: "Orders",
+      accessibilityLabel: "All customers",
+      panelID: "all-customers-content-1",
+    },
+    {
+      id: "accepts-marketing-1",
+      content: "Products",
+      panelID: "accepts-marketing-content-1",
+    },
+  ];
+
+  return (
+    <Page
+      title="Easy Order Manager"
+      primaryAction={{ content: "Add Products" }}
+    >
+      <div>
+        <Tabs tabs={tabs} selected={selected} onSelect={handleTabChange}>
+          <br />
+          {views[selected]}
+        </Tabs>
+      </div>
+    </Page>
+  );
+};
+
+export default Index;
