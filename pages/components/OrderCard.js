@@ -1,104 +1,19 @@
-import {
-  Card,
-  IndexTable,
-  ResourceList,
-  ResourceItem,
-  useIndexResourceState,
-  TextStyle,
-} from "@shopify/polaris";
+import { Card, List } from "@shopify/polaris";
 
-const OrderCard = () => {
-  const products = [
-    {
-      id: "0",
-      url: "products/341",
-      name: "Custom Name Onesie",
-      // location: "Decatur, USA",
-      // orders: 20,
-      // amountSpent: "$2,400",
-      status: "success",
-    },
-    {
-      id: "1",
-      url: "products/256",
-      name: "Mama Tee",
-      // location: "Los Angeles, USA",
-      // orders: 30,
-      // amountSpent: "$140",
-      status: "subdued",
-    },
-  ];
-  const customers = [
-    {
-      id: "3411",
-      url: "products/341",
-      name: "Custom Name Onesie",
-      location: "Decatur, USA",
-      orders: 20,
-      amountSpent: "$2,400",
-      status: "success",
-    },
-    {
-      id: "2561",
-      url: "products/256",
-      name: "test",
-      location: "Los Angeles, USA",
-      orders: 30,
-      amountSpent: "$140",
-      status: "subdued",
-    },
-  ];
-  const resourceName = {
-    singular: "product",
-    plural: "products",
-  };
-
-  const {
-    selectedResources,
-    allResourcesSelected,
-    handleSelectionChange,
-  } = useIndexResourceState(customers);
-
-  const rowMarkup = products.map(({ id, name, status }, index) => (
-    <IndexTable.Row
-      id={id}
-      key={id}
-      selected={selectedResources.includes(id)}
-      position={index}
-      status={status}
-    >
-      <IndexTable.Cell>
-        <TextStyle variation="strong">{name}</TextStyle>
-      </IndexTable.Cell>
-      {/* <IndexTable.Cell>{location}</IndexTable.Cell>
-        <IndexTable.Cell>{orders}</IndexTable.Cell>
-        <IndexTable.Cell>{amountSpent}</IndexTable.Cell> */}
-    </IndexTable.Row>
-  ));
-
+const OrderCard = (props) => {
+  // Props will have customer object and order object
   return (
     <Card
       title="Lizzy Abbott"
+      sectioned
       secondaryFooterActions={[{ content: "Details" }]}
       primaryFooterAction={{ content: "Complete" }}
-      sectioned
     >
-      <IndexTable
-        resourceName={resourceName}
-        itemCount={customers.length}
-        selectedItemsCount={
-          allResourcesSelected ? "All" : selectedResources.length
-        }
-        onSelectionChange={handleSelectionChange}
-        headings={[
-          { title: "Name" },
-          { title: "Location" },
-          { title: "Order count" },
-          { title: "Amount spent" },
-        ]}
-      >
-        {rowMarkup}
-      </IndexTable>
+      <List type="bullet">
+        <List.Item>Custom Name Onesie / Natural / 6 months / Archer</List.Item>
+        <List.Item>Red shirt</List.Item>
+        <List.Item>Green shirt</List.Item>
+      </List>
     </Card>
   );
 };
