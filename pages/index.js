@@ -1,10 +1,60 @@
 import { useState, useCallback, useEffect } from "react";
-import { Page, Card, Layout, Tabs, DisplayText } from "@shopify/polaris";
-import OrderCard from "./components/OrderCard";
+import { Page, Tabs, Badge } from "@shopify/polaris";
 import Orders from "./components/Orders";
-import ProductCard from "./components/ProductCard";
 import Products from "./components/Products";
-import axios from "axios";
+import CompletedOrders from "./components/CompletedOrders";
+import gql from "graphql-tag";
+import { Query } from "react-apollo";
+
+// GRAPHQL
+const GET_PRODUCTS_BY_ID = gql`
+  query getOrders {
+    orders(first: 10, query: "status:open") {
+      edges {
+        node {
+          id
+          createdAt
+          tags
+          lineItems(first: 10) {
+            edges {
+              node {
+                id
+                title
+                variantTitle
+                variant {
+                  id
+                  price
+                }
+                product {
+                  featuredImage {
+                    id
+                  }
+                  id
+                }
+                customAttributes {
+                  key
+                  value
+                }
+              }
+            }
+          }
+          customer {
+            id
+            firstName
+            lastName
+            email
+          }
+          shippingAddress {
+            formatted
+          }
+          billingAddress {
+            formatted
+          }
+        }
+      }
+    }
+  }
+`;
 
 const Index = () => {
   const [selected, setSelected] = useState(0);
@@ -14,42 +64,76 @@ const Index = () => {
     []
   );
 
-  useEffect(() => {
-    const getOrders = async () => {
-      await axios.get("/orders");
-    };
-
-    getOrders();
-  }, []);
-
-  const views = [<Orders />, <Products />];
-
-  const tabs = [
-    {
-      id: "orders",
-      content: "Orders",
-      accessibilityLabel: "All customers",
-      panelID: "all-customers-content-1",
-    },
-    {
-      id: "accepts-marketing-1",
-      content: "Products",
-      panelID: "accepts-marketing-content-1",
-    },
-  ];
-
   return (
-    <Page
-      title="Easy Order Manager"
-      primaryAction={{ content: "Add Products" }}
-    >
-      <div>
-        <Tabs tabs={tabs} selected={selected} onSelect={handleTabChange}>
-          <br />
-          {views[selected]}
-        </Tabs>
-      </div>
-    </Page>
+    <Query query={GET_PRODUCTS_BY_ID}>
+      {({ data, loading, error }) => {
+        if (loading) return <div>Loading…</div>;
+        if (error) return <div>{error.message}</div>;
+
+        console.log(data);
+        const orders = data?.orders?.edges.map((obj) => obj.node);
+
+        const views = [
+          <Orders
+            orders={orders.filter((order) => !order.tags.includes("EOM-READY"))}
+            title="New Orders"
+          />,
+          <Orders
+            orders={orders.filter((order) => order.tags.includes("EOM-READY"))}
+            title="Completed Orders"
+            completed={
+              orders.filter((order) => order.tags.includes("EOM-READY"))
+                .length > 0
+            }
+          />,
+          <Products />,
+        ];
+
+        const tabs = [
+          {
+            id: "new-orders",
+            content: (
+              <span>
+                New Orders <Badge status="new">10+</Badge>
+              </span>
+            ),
+            accessibilityLabel: "New Orders Page",
+            panelID: "new-orders-content",
+          },
+          {
+            id: "completed-orders",
+            content: "Completed Orders",
+            accessibilityLabel: "Completed Orders Page",
+            panelID: "completed-orders-content",
+          },
+          {
+            id: "products",
+            content: (
+              <span>
+                Products
+                {/* <Badge status="new">10+</Badge> */}
+              </span>
+            ),
+            accessibilityLabel: "Products Page",
+            panelID: "products-content",
+          },
+        ];
+
+        return (
+          <Page
+            title="Easy Order Manager"
+            primaryAction={{ content: "Sync Orders" }}
+          >
+            <div>
+              <Tabs tabs={tabs} selected={selected} onSelect={handleTabChange}>
+                <br />
+                {views[selected]}
+              </Tabs>
+            </div>
+          </Page>
+        );
+      }}
+    </Query>
   );
 };
 
