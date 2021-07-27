@@ -104,7 +104,6 @@ const CompletedOrderCard = ({
       <Card.Section title="Products">
         {products.map((product) => (
           <Stack alignment="center" distribution="leading" key={product.id}>
-            {console.log(product.product.featuredImage)}
             {product.product.featuredImage?.originalSrc ? (
               <MemoThumb
                 alt="Featured Image for Product"

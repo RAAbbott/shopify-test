@@ -11,8 +11,7 @@ import Products from "./components/Products";
 import CompletedOrders from "./components/CompletedOrders";
 import { AppBridgeContext } from "@shopify/app-bridge-react/context";
 import gql from "graphql-tag";
-import { Query, Mutation } from "react-apollo";
-import React from "react";
+import { useQuery } from "@apollo/react-hooks";
 import NewOrders from "./components/NewOrders";
 
 // GRAPHQL
@@ -24,167 +23,111 @@ const GET_ORDER_INFO = gql`
         url
       }
     }
-    orders(first: 10) {
+    orders(
+      first: 15
+      query: "fulfillment_status:unfulfilled, status:open, -tag:EOM-READY"
+    ) {
       edges {
         node {
           id
-          legacyResourceId
-          createdAt
-          name
-          tags
-          closed
-          cancelledAt
-          displayFulfillmentStatus
-          lineItems(first: 10) {
-            edges {
-              node {
-                id
-                title
-                variantTitle
-                variant {
-                  id
-                  price
-                }
-                product {
-                  featuredImage {
-                    id
-                    originalSrc
-                  }
-                  id
-                }
-                customAttributes {
-                  key
-                  value
-                }
-              }
-            }
-          }
-          customer {
-            id
-            firstName
-            lastName
-            email
-          }
-          shippingAddress {
-            formatted
-          }
-          billingAddress {
-            formatted
-          }
         }
       }
     }
   }
 `;
 
-export default class Index extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { selected: 0 };
-  }
+const Index = () => {
+  const [selected, setSelected] = useState(0);
+  const [orderCount, setOrderCount] = useState(0);
+  const { loading, error, data } = useQuery(GET_ORDER_INFO);
 
-  handleTabChange = (selectedTabIndex) =>
-    this.setState((prevState) => {
-      return {
-        ...prevState,
-        selected: selectedTabIndex,
-      };
-    });
+  const handleTabChange = (selectedTabIndex) => {
+    setSelected(selectedTabIndex);
+  };
 
-  render() {
+  const updateCount = (count) => {
+    setOrderCount(count);
+  };
+
+  useEffect(() => {
+    if (loading === false && data) {
+      setOrderCount(data?.orders?.edges.length);
+    }
+  }, [loading, data]);
+
+  if (loading)
     return (
-      <Query query={GET_ORDER_INFO}>
-        {({ data, loading, error }) => {
-          if (loading)
-            return (
-              <div style={{ height: "100px" }}>
-                <Frame>
-                  <Loading />
-                  <Page>
-                    <SkeletonBodyText />
-                    <br />
-                    <SkeletonBodyText />
-                    <br />
-                    <SkeletonBodyText />
-                    <br />
-                    <SkeletonBodyText />
-                  </Page>
-                </Frame>
-              </div>
-            );
-          if (error) return <div>{error.message}</div>;
-
-          const orders = data.orders?.edges?.map((obj) => obj.node);
-          const newOrders = orders.filter(
-            (order) =>
-              !order.tags.includes("EOM-READY") && order.closed === false
-          );
-          const completedOrders = orders.filter(
-            (order) => order.tags.includes("EOM-READY") || order.closed === true
-          );
-
-          const views = [
-            <NewOrders
-              orders={newOrders}
-              title="New Orders"
-              shopUrl={data.shop?.domains[0]?.url}
-            />,
-            <CompletedOrders
-              orders={completedOrders}
-              shopUrl={data.shop?.domains[0]?.url}
-              title="Completed Orders"
-              completed
-            />,
-            <Products />,
-          ];
-
-          const tabs = [
-            {
-              id: "new-orders",
-              content: (
-                <span>
-                  New Orders{" "}
-                  <Badge status="new">
-                    {newOrders.length > 10 ? "10+" : newOrders.length}
-                  </Badge>
-                </span>
-              ),
-              accessibilityLabel: "New Orders Page",
-              panelID: "new-orders-content",
-            },
-            {
-              id: "completed-orders",
-              content: "Completed Orders",
-              accessibilityLabel: "Completed Orders Page",
-              panelID: "completed-orders-content",
-            },
-            {
-              id: "products",
-              content: <span>Products</span>,
-              accessibilityLabel: "Products Page",
-              panelID: "products-content",
-            },
-          ];
-
-          return (
-            <Page
-              title="Easy Order Manager"
-              primaryAction={{ content: "Sync Orders" }}
-            >
-              <div>
-                <Tabs
-                  tabs={tabs}
-                  selected={this.state.selected}
-                  onSelect={this.handleTabChange}
-                >
-                  <br />
-                  {views[this.state.selected]}
-                </Tabs>
-              </div>
-            </Page>
-          );
-        }}
-      </Query>
+      <div style={{ height: "100px" }}>
+        <Frame>
+          <Loading />
+          <Page>
+            <SkeletonBodyText />
+            <br />
+            <SkeletonBodyText />
+            <br />
+            <SkeletonBodyText />
+            <br />
+            <SkeletonBodyText />
+          </Page>
+        </Frame>
+      </div>
     );
-  }
-}
+  if (error) return <div>{error.message}</div>;
+
+  const orderCounts = data.orders?.edges?.length;
+
+  const views = [
+    <NewOrders
+      title="New Orders"
+      shopUrl={data.shop?.domains[0]?.url}
+      updateCount={updateCount}
+    />,
+    <CompletedOrders
+      shopUrl={data.shop?.domains[0]?.url}
+      title="Completed Orders"
+      updateCount={updateCount}
+    />,
+    <Products />,
+  ];
+
+  const tabs = [
+    {
+      id: "new-orders",
+      content: (
+        <span>
+          New Orders{" "}
+          {orderCounts > 0 && (
+            <Badge status="new">{orderCounts > 10 ? "10+" : orderCounts}</Badge>
+          )}
+        </span>
+      ),
+      accessibilityLabel: "New Orders Page",
+      panelID: "new-orders-content",
+    },
+    {
+      id: "completed-orders",
+      content: "Completed Orders",
+      accessibilityLabel: "Completed Orders Page",
+      panelID: "completed-orders-content",
+    },
+    {
+      id: "products",
+      content: <span>Products</span>,
+      accessibilityLabel: "Products Page",
+      panelID: "products-content",
+    },
+  ];
+
+  return (
+    <Page title="Easy Order Manager" primaryAction={{ content: "Sync Orders" }}>
+      <div>
+        <Tabs tabs={tabs} selected={selected} onSelect={handleTabChange}>
+          <br />
+          {views[selected]}
+        </Tabs>
+      </div>
+    </Page>
+  );
+};
+
+export default Index;
