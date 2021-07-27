@@ -1,10 +1,19 @@
 import React from "react";
 import { Layout, Subheading } from "@shopify/polaris";
-import CompletedOrderCard from "./CompletedOrderCard";
+import OrderCard from "./OrderCard";
 
 export default class NewOrders extends React.Component {
   constructor(props) {
     super(props);
+  }
+
+  shouldComponentUpdate(nextProps, nextState) {
+    console.log(this.props.number, nextProps.number);
+    if (this.props.number === nextProps.number) {
+      return false;
+    } else {
+      return true;
+    }
   }
 
   render() {
@@ -17,14 +26,13 @@ export default class NewOrders extends React.Component {
         {orders.map((order) => {
           return (
             <Layout.Section key={order.id} oneHalf>
-              <CompletedOrderCard
+              <OrderCard
                 customer={order.customer}
                 products={order.lineItems.edges.map((obj) => obj.node)}
                 date={order.createdAt}
                 shipping={order.shippingAddress?.formatted}
                 orderName={order.name}
-                orderId={order.legacyResourceId}
-                fulfilled={order.displayFulfillmentStatus === "FULFILLED"}
+                legacyId={order.legacyResourceId}
                 shopUrl={shopUrl}
               />
             </Layout.Section>

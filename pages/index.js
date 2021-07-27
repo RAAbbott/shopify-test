@@ -1,20 +1,40 @@
 import { useState, useCallback, useEffect } from "react";
-import { Page, Tabs, Badge } from "@shopify/polaris";
-import Orders from "./components/Orders";
+import {
+  Page,
+  Tabs,
+  Badge,
+  Frame,
+  Loading,
+  SkeletonBodyText,
+} from "@shopify/polaris";
 import Products from "./components/Products";
 import CompletedOrders from "./components/CompletedOrders";
+import { AppBridgeContext } from "@shopify/app-bridge-react/context";
 import gql from "graphql-tag";
-import { Query } from "react-apollo";
+import { Query, Mutation } from "react-apollo";
+import React from "react";
+import NewOrders from "./components/NewOrders";
 
 // GRAPHQL
-const GET_PRODUCTS_BY_ID = gql`
-  query getOrders {
-    orders(first: 10, query: "status:open") {
+const GET_ORDER_INFO = gql`
+  query getOrderInfo {
+    shop {
+      name
+      domains {
+        url
+      }
+    }
+    orders(first: 10) {
       edges {
         node {
           id
+          legacyResourceId
           createdAt
+          name
           tags
+          closed
+          cancelledAt
+          displayFulfillmentStatus
           lineItems(first: 10) {
             edges {
               node {
@@ -28,6 +48,7 @@ const GET_PRODUCTS_BY_ID = gql`
                 product {
                   featuredImage {
                     id
+                    originalSrc
                   }
                   id
                 }
@@ -56,85 +77,114 @@ const GET_PRODUCTS_BY_ID = gql`
   }
 `;
 
-const Index = () => {
-  const [selected, setSelected] = useState(0);
+export default class Index extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { selected: 0 };
+  }
 
-  const handleTabChange = useCallback(
-    (selectedTabIndex) => setSelected(selectedTabIndex),
-    []
-  );
+  handleTabChange = (selectedTabIndex) =>
+    this.setState((prevState) => {
+      return {
+        ...prevState,
+        selected: selectedTabIndex,
+      };
+    });
 
-  return (
-    <Query query={GET_PRODUCTS_BY_ID}>
-      {({ data, loading, error }) => {
-        if (loading) return <div>Loading…</div>;
-        if (error) return <div>{error.message}</div>;
+  render() {
+    return (
+      <Query query={GET_ORDER_INFO}>
+        {({ data, loading, error }) => {
+          if (loading)
+            return (
+              <div style={{ height: "100px" }}>
+                <Frame>
+                  <Loading />
+                  <Page>
+                    <SkeletonBodyText />
+                    <br />
+                    <SkeletonBodyText />
+                    <br />
+                    <SkeletonBodyText />
+                    <br />
+                    <SkeletonBodyText />
+                  </Page>
+                </Frame>
+              </div>
+            );
+          if (error) return <div>{error.message}</div>;
 
-        console.log(data);
-        const orders = data?.orders?.edges.map((obj) => obj.node);
+          const orders = data.orders?.edges?.map((obj) => obj.node);
+          const newOrders = orders.filter(
+            (order) =>
+              !order.tags.includes("EOM-READY") && order.closed === false
+          );
+          const completedOrders = orders.filter(
+            (order) => order.tags.includes("EOM-READY") || order.closed === true
+          );
 
-        const views = [
-          <Orders
-            orders={orders.filter((order) => !order.tags.includes("EOM-READY"))}
-            title="New Orders"
-          />,
-          <Orders
-            orders={orders.filter((order) => order.tags.includes("EOM-READY"))}
-            title="Completed Orders"
-            completed={
-              orders.filter((order) => order.tags.includes("EOM-READY"))
-                .length > 0
-            }
-          />,
-          <Products />,
-        ];
+          const views = [
+            <NewOrders
+              orders={newOrders}
+              title="New Orders"
+              shopUrl={data.shop?.domains[0]?.url}
+            />,
+            <CompletedOrders
+              orders={completedOrders}
+              shopUrl={data.shop?.domains[0]?.url}
+              title="Completed Orders"
+              completed
+            />,
+            <Products />,
+          ];
 
-        const tabs = [
-          {
-            id: "new-orders",
-            content: (
-              <span>
-                New Orders <Badge status="new">10+</Badge>
-              </span>
-            ),
-            accessibilityLabel: "New Orders Page",
-            panelID: "new-orders-content",
-          },
-          {
-            id: "completed-orders",
-            content: "Completed Orders",
-            accessibilityLabel: "Completed Orders Page",
-            panelID: "completed-orders-content",
-          },
-          {
-            id: "products",
-            content: (
-              <span>
-                Products
-                {/* <Badge status="new">10+</Badge> */}
-              </span>
-            ),
-            accessibilityLabel: "Products Page",
-            panelID: "products-content",
-          },
-        ];
+          const tabs = [
+            {
+              id: "new-orders",
+              content: (
+                <span>
+                  New Orders{" "}
+                  <Badge status="new">
+                    {newOrders.length > 10 ? "10+" : newOrders.length}
+                  </Badge>
+                </span>
+              ),
+              accessibilityLabel: "New Orders Page",
+              panelID: "new-orders-content",
+            },
+            {
+              id: "completed-orders",
+              content: "Completed Orders",
+              accessibilityLabel: "Completed Orders Page",
+              panelID: "completed-orders-content",
+            },
+            {
+              id: "products",
+              content: <span>Products</span>,
+              accessibilityLabel: "Products Page",
+              panelID: "products-content",
+            },
+          ];
 
-        return (
-          <Page
-            title="Easy Order Manager"
-            primaryAction={{ content: "Sync Orders" }}
-          >
-            <div>
-              <Tabs tabs={tabs} selected={selected} onSelect={handleTabChange}>
-                <br />
-                {views[selected]}
-              </Tabs>
-            </div>
-          </Page>
-        );
-      }}
-    </Query>
-  );
-};
-
-export default Index;
+          return (
+            <Page
+              title="Easy Order Manager"
+              primaryAction={{ content: "Sync Orders" }}
+            >
+              <div>
+                <Tabs
+                  tabs={tabs}
+                  selected={this.state.selected}
+                  onSelect={this.handleTabChange}
+                >
+                  <br />
+                  {views[this.state.selected]}
+                </Tabs>
+              </div>
+            </Page>
+          );
+        }}
+      </Query>
+    );
+  }
+}
