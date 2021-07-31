@@ -58,7 +58,7 @@ const OrderCard = ({
     productState[product.id] = false;
   }
 
-  products[0].customAttributes[0] = { key: "Custom Name", value: "Archer" };
+  // products[0].customAttributes[0] = { key: "Custom Name", value: "Archer" };
 
   const [open, setOpen] = useState(false);
   const [completedProducts, updateCompletedProducts] = useState(productState);
@@ -137,7 +137,7 @@ const OrderCard = ({
             >
               {product.title}{" "}
               {product.variantTitle ? ` / ${product.variantTitle}` : ""}
-              {product.customAttributes.length &&
+              {product.customAttributes.length > 0 &&
                 product.customAttributes?.map((node) => ` / ${node.value}`)}
             </TextStyle>
           </Stack>

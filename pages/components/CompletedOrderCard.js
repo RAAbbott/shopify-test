@@ -59,7 +59,7 @@ const CompletedOrderCard = ({
     productState[product.id] = false;
   }
 
-  products[0].customAttributes[0] = { key: "Custom Name", value: "Archer" };
+  // products[0].customAttributes[0] = { key: "Custom Name", value: "Archer" };
 
   // Props will have customer object and order object
   const [open, setOpen] = useState(false);
