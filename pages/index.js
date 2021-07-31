@@ -209,7 +209,7 @@ const Index = () => {
 
   return (
     <Page
-      title="Easy Order Manager"
+      title="Shopify Order Manager"
       // primaryAction={{ content: "Sync Orders" }}
     >
       <div>
