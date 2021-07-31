@@ -72,8 +72,6 @@ const OrderCard = ({
   //   }));
   // };
 
-  console.log(customer);
-
   return (
     <Card
       title={
@@ -119,7 +117,8 @@ const OrderCard = ({
       <Card.Section title="Products">
         {products.map((product) => (
           <Stack alignment="center" distribution="leading" key={product.id}>
-            {product.product.featuredImage?.originalSrc ? (
+            {console.log("PRODUCT: ", product)}
+            {product?.product?.featuredImage?.originalSrc ? (
               <MemoThumb
                 alt="Featured Image for Product"
                 source={product.product.featuredImage?.originalSrc}
