@@ -6,12 +6,13 @@ import {
   Frame,
   Loading,
   SkeletonBodyText,
+  Toast,
 } from "@shopify/polaris";
 import Products from "./components/Products";
 import CompletedOrders from "./components/CompletedOrders";
 import { AppBridgeContext } from "@shopify/app-bridge-react/context";
 import gql from "graphql-tag";
-import { useQuery } from "@apollo/react-hooks";
+import { useQuery, useMutation } from "@apollo/react-hooks";
 import NewOrders from "./components/NewOrders";
 
 // GRAPHQL
@@ -23,14 +24,64 @@ const GET_ORDER_INFO = gql`
         url
       }
     }
-    orders(
-      first: 15
-      query: "fulfillment_status:unfulfilled, status:open, -tag:EOM-READY"
-    ) {
+    orders(first: 15) {
       edges {
         node {
           id
+          legacyResourceId
+          createdAt
+          closed
+          name
+          tags
+          displayFulfillmentStatus
+          lineItems(first: 10) {
+            edges {
+              node {
+                id
+                title
+                variantTitle
+                variant {
+                  id
+                  price
+                }
+                product {
+                  featuredImage {
+                    id
+                    originalSrc
+                  }
+                  id
+                }
+                customAttributes {
+                  key
+                  value
+                }
+              }
+            }
+          }
+          customer {
+            id
+            firstName
+            lastName
+            email
+          }
+          shippingAddress {
+            formatted
+          }
         }
+      }
+    }
+  }
+`;
+
+const ADD_TAGS = gql`
+  mutation tagsAdd($id: ID!, $tags: [String!]!) {
+    tagsAdd(id: $id, tags: $tags) {
+      node {
+        id
+      }
+      userErrors {
+        field
+        message
       }
     }
   }
@@ -38,20 +89,49 @@ const GET_ORDER_INFO = gql`
 
 const Index = () => {
   const [selected, setSelected] = useState(0);
-  const [orderCount, setOrderCount] = useState(0);
+  const [orders, setOrders] = useState([]);
+  const [toast, setToast] = useState(false);
+  // const [cardLoading, setCardLoading] = useState(false);
   const { loading, error, data } = useQuery(GET_ORDER_INFO);
+  const [
+    handleSubmit,
+    { loading: mutateLoading, error: mutateError },
+  ] = useMutation(ADD_TAGS, {
+    onCompleted: (data) => {
+      const prevOrders = orders.slice();
+      prevOrders[
+        orders.findIndex((order) => order.id === data?.tagsAdd?.node?.id)
+      ].tags.push("EOM-READY");
+      setOrders(prevOrders);
+      setToast(true);
+      // setCardLoading(false);
+    },
+  });
 
   const handleTabChange = (selectedTabIndex) => {
     setSelected(selectedTabIndex);
   };
 
-  const updateCount = (count) => {
-    setOrderCount(count);
+  const updateOrders = (mutateProps, id) => {
+    handleSubmit(mutateProps);
+  };
+
+  const getNewOrders = () => {
+    console.log(orders);
+    return orders.filter(
+      (order) => !order?.tags.includes("EOM-READY") && !order.closed
+    );
+  };
+
+  const getCompletedOrders = () => {
+    return orders.filter(
+      (order) => order?.tags.includes("EOM-READY") || order.closed
+    );
   };
 
   useEffect(() => {
     if (loading === false && data) {
-      setOrderCount(data?.orders?.edges.length);
+      setOrders(data?.orders?.edges.map((obj) => obj.node));
     }
   }, [loading, data]);
 
@@ -74,21 +154,31 @@ const Index = () => {
     );
   if (error) return <div>{error.message}</div>;
 
-  const orderCounts = data.orders?.edges?.length;
-
+  console.log(orders);
   const views = [
     <NewOrders
+      orders={orders.filter(
+        (order) => !order?.tags.includes("EOM-READY") && !order.closed
+      )}
       title="New Orders"
       shopUrl={data.shop?.domains[0]?.url}
-      updateCount={updateCount}
+      updateOrders={updateOrders}
+      // loading={cardLoading}
     />,
     <CompletedOrders
+      orders={orders.filter(
+        (order) => order?.tags.includes("EOM-READY") || order.closed
+      )}
       shopUrl={data.shop?.domains[0]?.url}
       title="Completed Orders"
-      updateCount={updateCount}
+      // updateOrders={updateOrders}
     />,
     <Products />,
   ];
+
+  const orderCount = orders.filter(
+    (order) => !order?.tags.includes("EOM-READY") && !order.closed
+  ).length;
 
   const tabs = [
     {
@@ -96,8 +186,8 @@ const Index = () => {
       content: (
         <span>
           New Orders{" "}
-          {orderCounts > 0 && (
-            <Badge status="new">{orderCounts > 10 ? "10+" : orderCounts}</Badge>
+          {orderCount > 0 && (
+            <Badge status="new">{orderCount > 10 ? "10+" : orderCount}</Badge>
           )}
         </span>
       ),
@@ -126,6 +216,15 @@ const Index = () => {
           {views[selected]}
         </Tabs>
       </div>
+      {toast && (
+        <Frame>
+          <Toast
+            content="Successfully Complete Order"
+            onDismiss={() => setToast(false)}
+            duration={3000}
+          />
+        </Frame>
+      )}
     </Page>
   );
 };

@@ -10,25 +10,10 @@ import {
   Link,
   Thumbnail,
   Icon,
+  Spinner,
 } from "@shopify/polaris";
 import { format, formatDistance, subDays } from "date-fns";
 import { ProductsMajor } from "@shopify/polaris-icons";
-import gql from "graphql-tag";
-import { Query, Mutation, useMutation } from "react-apollo";
-
-const ADD_TAGS = gql`
-  mutation tagsAdd($id: ID!, $tags: [String!]!) {
-    tagsAdd(id: $id, tags: $tags) {
-      node {
-        id
-      }
-      userErrors {
-        field
-        message
-      }
-    }
-  }
-`;
 
 class MemoThumb extends React.Component {
   constructor(props) {
@@ -65,6 +50,7 @@ const OrderCard = ({
   legacyId,
   shopUrl,
   onUpdate,
+  loading,
 }) => {
   const productState = {};
 
@@ -76,6 +62,7 @@ const OrderCard = ({
 
   const [open, setOpen] = useState(false);
   const [completedProducts, updateCompletedProducts] = useState(productState);
+  const [showSpinner, setShowSpinner] = useState(loading);
 
   const handleToggle = useCallback(() => setOpen((open) => !open), []);
   const productToggle = (id) => {
@@ -114,9 +101,13 @@ const OrderCard = ({
       sectioned
       secondaryFooterActions={[{ content: "Details", onAction: handleToggle }]}
       primaryFooterAction={{
-        content: "Complete",
+        content: showSpinner ? (
+          <Spinner accessibilityLabel="Loading Spinner" size="small" />
+        ) : (
+          "Complete"
+        ),
         onAction: () => {
-          console.log("action!");
+          setShowSpinner(true);
           onUpdate(
             { variables: { id: orderId, tags: ["EOM-READY"] } },
             orderId
