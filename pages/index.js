@@ -24,7 +24,7 @@ const GET_ORDER_INFO = gql`
         url
       }
     }
-    orders(first: 15) {
+    orders(first: 15, reverse: true) {
       edges {
         node {
           id
