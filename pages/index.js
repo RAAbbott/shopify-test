@@ -63,6 +63,7 @@ const GET_ORDER_INFO = gql`
             firstName
             lastName
             email
+            legacyResourceId
           }
           shippingAddress {
             formatted
@@ -163,7 +164,6 @@ const Index = () => {
       title="New Orders"
       shopUrl={data.shop?.domains[0]?.url}
       updateOrders={updateOrders}
-      // loading={cardLoading}
     />,
     <CompletedOrders
       orders={orders.filter(
@@ -171,7 +171,6 @@ const Index = () => {
       )}
       shopUrl={data.shop?.domains[0]?.url}
       title="Completed Orders"
-      // updateOrders={updateOrders}
     />,
     <Products />,
   ];
@@ -209,7 +208,10 @@ const Index = () => {
   ];
 
   return (
-    <Page title="Easy Order Manager" primaryAction={{ content: "Sync Orders" }}>
+    <Page
+      title="Easy Order Manager"
+      // primaryAction={{ content: "Sync Orders" }}
+    >
       <div>
         <Tabs tabs={tabs} selected={selected} onSelect={handleTabChange}>
           <br />

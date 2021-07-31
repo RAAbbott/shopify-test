@@ -12,7 +12,6 @@ const NewOrders = ({ orders, title, shopUrl, updateOrders }) => {
         orders?.map((order) => {
           return (
             <Layout.Section key={order.id} oneHalf>
-              {console.log(order.id, order)}
               <OrderCard
                 customer={order.customer}
                 products={order.lineItems.edges.map((obj) => obj.node)}

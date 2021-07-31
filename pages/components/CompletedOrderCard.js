@@ -144,14 +144,18 @@ const CompletedOrderCard = ({
           }
         >
           <Card.Section title="Customer">
-            <p>
+            <Link
+              url={`${shopUrl}/admin/customers/${customer.legacyResourceId}`}
+              external
+              monochrome
+            >
               {customer?.firstName} {customer?.lastName}
-            </p>
+            </Link>
             <p>{customer?.email || "No email found"}</p>
           </Card.Section>
-          <Card.Section title="Date">
+          {/* <Card.Section title="Date">
             <p>{date}</p>
-          </Card.Section>
+          </Card.Section> */}
           <Card.Section title="Shipping">
             <p>{shipping?.join("\n") || "No shipping info found"}</p>
           </Card.Section>
